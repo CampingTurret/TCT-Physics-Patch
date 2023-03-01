@@ -1,6 +1,6 @@
 # Turret's Physics Patch
 
-This patch changes the update method in MoveTransform to a more accurate equation of motion, 
+This patch changes the update method in MoveTransform to a more accurate equation of motion, and changes the drag to be quadratic
 
 ## change
 
