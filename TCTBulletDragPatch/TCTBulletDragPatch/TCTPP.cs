@@ -29,9 +29,8 @@ namespace TurretsPysicsPatch
         {
             // Use this to call any harmony patch files your mod may have
             HarmonyFileLog.Enabled = true;
-            FileLog.Log("hello1");
             new Harmony(ModId).PatchAll();
-            FileLog.Log("hello3");
+
             // get the MethodBase of the original
             var original = typeof(MoveTransform).GetMethod("Update");
             FileLog.Log("hello4");
@@ -61,84 +60,90 @@ namespace TurretsPysicsPatch
 
     }
 
-
-    //[HarmonyPatch(typeof(Component), nameof(Component.transform))]
-    //public class Patch_MoveTransform_MONO
-
-    //{
-    //    [HarmonyReversePatch]
-    //    [MethodImpl(MethodImplOptions.NoInlining)]
-     //   public static Transform transform(MoveTransform instance) 
-       // {
-          //  return null; 
-        //}
-    //}
-  
-
-
-
-
     [HarmonyPatch(typeof(MoveTransform), "Update")]
     public class Patch_MoveTransform
     {
-
-        //[HarmonyReversePatch]
-        //[HarmonyPatch(typeof(MonoBehaviour), nameof(Transform))]
-        //[MethodImpl(MethodImplOptions.NoInlining)]
-        //static Transform transform(MoveTransform instance) { return null; }
 
 
         [HarmonyPatch(typeof(MoveTransform), "Update")]
         private static bool Prefix(MoveTransform __instance)
         {
             float simspeed = (float)Traverse.Create(__instance).Field("simulationSpeed").GetValue();
-            float dt = TimeHandler.deltaTime * simspeed;
+            Debug.Log("hello");
+            float t = Time.deltaTime * simspeed + __instance.GetAdditionalData().msleft;
+            float dt = 1f / 60f;
             Vector3 av;
-            Vector3 nv = __instance.velocity;
+            Vector3 nv;
             Vector3 ag;
             Vector3 a;
             Vector3 steppos;
-            if (__instance.drag < 0.01)
-            {
-                ag = Vector3.down * __instance.gravity * __instance.multiplier ;
-                a = ag;
-                nv += ag * dt;
-                steppos = a * dt * dt * 0.5f + __instance.velocity * dt ;
-            }
-            else
-            {
+            while (t > dt) {
                 
-                float dtstep = 0.01f;
-                ag = Vector3.down * __instance.gravity * __instance.multiplier ;
-                a = ag;
-                nv += ag * dt;
-                steppos = a * dt * dt * 0.5f + __instance.velocity * dt ;
-                //while (  > dtstep)  
-                //{
+                t = t - dt;
+                
+                nv = __instance.velocity;
+                if (__instance.drag < 0.01)
+                {
+                    ag = Vector3.down * __instance.gravity * __instance.multiplier;
+                    a = ag;
+                    nv += ag * dt;
+                    steppos = a * dt * dt * 0.5f + __instance.velocity * dt;
+                }
+                else
+                {
 
-                //}
-                //if (__instance.velocity.magnitude > __instance.dragMinSpeed)
-                //{
-                //av = -__instance.velocity.normalized * __instance.drag * __instance.multiplier;
-                //}
-                //else
-                //{
-                //av = new Vector3(0, 0, 0);
-                //    nv = nv.normalized * __instance.dragMinSpeed;
-                //}
+                    ag = Vector3.down * __instance.gravity * __instance.multiplier;
+                    av = -Vector3.Normalize(__instance.velocity) * __instance.velocity.magnitude * __instance.velocity.magnitude * __instance.multiplier * __instance.drag/200;
+                    a = ag+av;
+                    nv += a * dt;
+                    steppos = a * dt * dt * 0.5f + __instance.velocity * dt;
+                    
+                }
 
-                //a = ag;
-                //steppos = a * dt * dt * 0.5f + __instance.velocity * dt;
+                __instance.distanceTravelled += steppos.magnitude;
+                __instance.transform.position = __instance.transform.position + steppos;
+                __instance.velocity = nv;
+                __instance.transform.rotation = Quaternion.LookRotation(__instance.velocity, Vector3.forward);
+
             }
-          
-            __instance.distanceTravelled = steppos.magnitude;
-            __instance.transform.position = __instance.transform.position + steppos;
-            __instance.velocity = nv;
-            __instance.transform.rotation = Quaternion.LookRotation(__instance.velocity, Vector3.forward);
-
+            __instance.GetAdditionalData().msleft = t;
             return false;
         }
+
     }
+
+    
+    [Serializable]
+    public class MoveTransformAdditionalData
+    {
+        public float msleft;
+
+        public MoveTransformAdditionalData()
+        {
+            float msleft = 0;
+        }
+    }
+
+    public static class MoveTransformExtension
+    {
+        private static readonly ConditionalWeakTable<MoveTransform, MoveTransformAdditionalData> data =
+            new ConditionalWeakTable<MoveTransform, MoveTransformAdditionalData>();
+
+        public static MoveTransformAdditionalData GetAdditionalData(this MoveTransform movetransform)
+        {
+            return data.GetOrCreateValue(movetransform);
+        }
+
+        public static void AddData(this MoveTransform movetransform, MoveTransformAdditionalData value)
+        {
+            try
+            {
+                data.Add(movetransform, value);
+            }
+            catch (Exception) { }
+        }
+    }
+    
 }
 
 
