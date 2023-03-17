@@ -14,7 +14,6 @@ namespace TurretsPysicsPatch
     // These are the mods required for our mod to work
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("pykess.rounds.plugins.moddingutils", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInDependency("pykess.rounds.plugins.cardchoicespawnuniquecardpatch", BepInDependency.DependencyFlags.HardDependency)]
     // Declares our mod to Bepin
     [BepInPlugin(ModId, ModName, Version)]
     // The game our mod is associated with
@@ -23,39 +22,15 @@ namespace TurretsPysicsPatch
     { 
         private const string ModId = "TheCampingTurret.Rounds.TCTPP.patch";
         private const string ModName = "TurretsPysicsPatch";
-        public const string Version = "2.2.4";
+        public const string Version = "0.4.5";
  
         void Awake()
         {
             // Use this to call any harmony patch files your mod may have
-            HarmonyFileLog.Enabled = true;
+            
             new Harmony(ModId).PatchAll();
+             
 
-            // get the MethodBase of the original
-            var original = typeof(MoveTransform).GetMethod("Update");
-            FileLog.Log("hello4");
-            // retrieve all patches
-            var patches = Harmony.GetPatchInfo(original);
-            FileLog.Log("hello6");
-            if (patches is null)
-            {
-                FileLog.Log("not pached");
-                return; // not patched
-            }
-            FileLog.Log("hello5");
-            // get a summary of all different Harmony ids involved
-            FileLog.Log("all owners: " + patches.Owners);
-
-            // get info about all Prefixes/Postfixes/Transpilers
-            foreach (var patch in patches.Prefixes)
-            {
-                FileLog.Log("index: " + patch.index);
-                FileLog.Log("owner: " + patch.owner);
-                FileLog.Log("patch method: " + patch.PatchMethod);
-                FileLog.Log("priority: " + patch.priority);
-                FileLog.Log("before: " + patch.before);
-                FileLog.Log("after: " + patch.after);
-            }
         }
 
     }
@@ -69,9 +44,8 @@ namespace TurretsPysicsPatch
         private static bool Prefix(MoveTransform __instance)
         {
             float simspeed = (float)Traverse.Create(__instance).Field("simulationSpeed").GetValue();
-            Debug.Log("hello");
             float t = Time.deltaTime * simspeed + __instance.GetAdditionalData().msleft;
-            float dt = 1f / 60f;
+            float dt = 1f / 70f;
             Vector3 av;
             Vector3 nv;
             Vector3 ag;
@@ -82,23 +56,18 @@ namespace TurretsPysicsPatch
                 t = t - dt;
                 
                 nv = __instance.velocity;
+                if (__instance.simulateGravity == 0) { ag = Vector3.down * __instance.gravity * __instance.multiplier; } else { ag = new Vector3(0, 0, 0); }
                 if (__instance.drag < 0.01)
                 {
-                    ag = Vector3.down * __instance.gravity * __instance.multiplier;
-                    a = ag;
-                    nv += ag * dt;
-                    steppos = a * dt * dt * 0.5f + __instance.velocity * dt;
-                }
+                    av = new Vector3(0, 0, 0);   
+                }                
                 else
                 {
-
-                    ag = Vector3.down * __instance.gravity * __instance.multiplier;
-                    av = -Vector3.Normalize(__instance.velocity) * __instance.velocity.magnitude * __instance.velocity.magnitude * __instance.multiplier * __instance.drag/200;
-                    a = ag+av;
-                    nv += a * dt;
-                    steppos = a * dt * dt * 0.5f + __instance.velocity * dt;
-                    
+                    av = -Vector3.Normalize(__instance.velocity) * __instance.velocity.magnitude * __instance.velocity.magnitude * __instance.multiplier * __instance.drag/100;
                 }
+                a = ag + av;
+                steppos = a * dt * dt * 0.5f + __instance.velocity * dt;
+                nv += a * dt;
 
                 __instance.distanceTravelled += steppos.magnitude;
                 __instance.transform.position = __instance.transform.position + steppos;
