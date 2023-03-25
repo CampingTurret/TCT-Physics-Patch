@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TurretsPysicsPatch", "TCTBulletDragPatch\TurretsPysicsPatch.csproj", "{3D934249-23C5-43E4-A910-562F3E2A4F8A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TurretsPhysicsPatch", "TCTBulletDragPatch\TurretsPhysicsPatch.csproj", "{3D934249-23C5-43E4-A910-562F3E2A4F8A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

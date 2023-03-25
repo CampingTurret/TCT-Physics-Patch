@@ -1,8 +1,8 @@
 {
-  "name": "TurretsPysicsPatch",
-  "version_number": "0.4.5",
-  "website_url": "",
-  "description": "Changes the bullet physics related to motion. More specificaly changes drag to be quadratic and forces a fixed update rate for consisrancy between players.",
+  "name": "TurretsPhysicsPatch",
+  "version_number": "0.0.5",
+  "website_url": "https://github.com/CampingTurret/TCT-Physics-Patch",
+  "description": "Changes the bullet physics related to motion. More specificaly changes drag to be quadratic and forces a fixed update rate for consistancy between players and shots.",
   "dependencies": [
     "willis81808-MMHook-1.0.0",
     "BepInEx-BepInExPack_ROUNDS-5.4.1900",

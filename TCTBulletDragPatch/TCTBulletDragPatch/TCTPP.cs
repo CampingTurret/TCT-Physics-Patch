@@ -9,7 +9,7 @@ using UnityEngine;
 using static UnityEngine.Experimental.Rendering.RenderPass;
 using System.Runtime.CompilerServices;
 
-namespace TurretsPysicsPatch
+namespace TurretsPhysicsPatch
 {
     // These are the mods required for our mod to work
     [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
@@ -18,11 +18,11 @@ namespace TurretsPysicsPatch
     [BepInPlugin(ModId, ModName, Version)]
     // The game our mod is associated with
     [BepInProcess("Rounds.exe")]
-    public class TurretsPysicsPatch : BaseUnityPlugin
+    public class TurretsPhysicsPatch : BaseUnityPlugin
     { 
         private const string ModId = "TheCampingTurret.Rounds.TCTPP.patch";
-        private const string ModName = "TurretsPysicsPatch";
-        public const string Version = "0.4.5";
+        private const string ModName = "TurretsPhysicsPatch";
+        public const string Version = "0.0.5";
  
         void Awake()
         {
@@ -44,26 +44,27 @@ namespace TurretsPysicsPatch
         private static bool Prefix(MoveTransform __instance)
         {
             float simspeed = (float)Traverse.Create(__instance).Field("simulationSpeed").GetValue();
-            float t = Time.deltaTime * simspeed + __instance.GetAdditionalData().msleft;
-            float dt = 1f / 70f;
+            float t = Time.deltaTime + __instance.GetAdditionalData().msleft;
+            float dtt = 1f / 70f;
+            float dt = dtt * simspeed;
             Vector3 av;
             Vector3 nv;
             Vector3 ag;
             Vector3 a;
             Vector3 steppos;
-            while (t > dt) {
+            if (__instance.simulateGravity == 0) { ag = Vector3.down * __instance.gravity * __instance.multiplier; } else { ag = new Vector3(0, 0, 0); }
+            while (t > dtt) {
                 
-                t = t - dt;
+                t = t - dtt;
                 
                 nv = __instance.velocity;
-                if (__instance.simulateGravity == 0) { ag = Vector3.down * __instance.gravity * __instance.multiplier; } else { ag = new Vector3(0, 0, 0); }
                 if (__instance.drag < 0.01)
                 {
                     av = new Vector3(0, 0, 0);   
                 }                
                 else
                 {
-                    av = -Vector3.Normalize(__instance.velocity) * __instance.velocity.magnitude * __instance.velocity.magnitude * __instance.multiplier * __instance.drag/100;
+                    av = -__instance.velocity.normalized * __instance.velocity.sqrMagnitude * __instance.multiplier * __instance.drag * 0.01f;
                 }
                 a = ag + av;
                 steppos = a * dt * dt * 0.5f + __instance.velocity * dt;
