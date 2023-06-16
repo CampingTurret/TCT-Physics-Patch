@@ -40,10 +40,10 @@ namespace TurretsPhysicsPatch
 
     }
     /// <summary>
-    /// Both function and positionfunction have to be implimented if custom function is defined and used
+    /// Both function and positionfunction have to be implimented if custom function is defined and used. <br></br><br></br>
     /// 
-    /// position function is for dS 
-    /// function is for dV
+    /// position function is for dS. <br></br>
+    /// function is for dV. <br></br> <br></br>
     /// 
     /// position function is called first
     /// </summary>
@@ -139,7 +139,7 @@ namespace TurretsPhysicsPatch
             float simspeed = (float)Traverse.Create(__instance).Field("simulationSpeed").GetValue();
             float t = Time.deltaTime + __instance.GetAdditionalData().msleft;
             float tsys = Time.time;
-            float dtt = 1f / 70f;
+            float dtt = 1f / 90f;
             float dt = dtt * simspeed;
             Vector3 Effectstep = new Vector3(0,0,0);
             Vector3 av;
@@ -172,6 +172,10 @@ namespace TurretsPhysicsPatch
                             if (!cont)
                             {
                                 L.Remove(Effect);
+                                if(L.Count == 0)
+                                {
+                                    __instance.GetAdditionalData().Waitingforeffect = false;
+                                }
                             }
                         }
                     }
@@ -192,12 +196,19 @@ namespace TurretsPhysicsPatch
                 }
 
 
+                //Mitigation for to high velocity going backwards
+                if((av*dt).sqrMagnitude > __instance.velocity.sqrMagnitude )
+                {
+                    av = -0.7f * __instance.velocity;
+                }
+
                 //Integration
                 a = ag + av;
                 steppos = a * dt * dt * 0.5f + __instance.velocity * dt;
                 nv += a * dt;
 
-                //
+                
+                //Numerical scheme
                 __instance.distanceTravelled += steppos.magnitude + Effectstep.magnitude;
                 __instance.transform.position = __instance.transform.position + steppos + Effectstep;
                 __instance.velocity = nv;
@@ -264,7 +275,7 @@ namespace ExtensionMethods
 
             Dirac Effect = new Dirac(Time.time,Impulse.normalized,Impulse.magnitude);
             movetransform.GetAdditionalData().WaitList.Add(Effect);
-            
+            movetransform.GetAdditionalData().Waitingforeffect = true;
         }
 
         /// <summary>
@@ -279,6 +290,7 @@ namespace ExtensionMethods
 
             Dirac Effect = new Dirac(Time.time, Impulse.normalized, Impulse.magnitude);
             movetransform.GetAdditionalData().WaitList.Add(Effect);
+            movetransform.GetAdditionalData().Waitingforeffect = true;
 
         }
         /// <summary>
@@ -294,6 +306,7 @@ namespace ExtensionMethods
         {
             Square_pulse Effect = new Square_pulse(Time.time, dir, magnitude, duration);
             movetransform.GetAdditionalData().WaitList.Add(Effect);
+            movetransform.GetAdditionalData().Waitingforeffect = true;
 
         }
         /// <summary>
@@ -308,6 +321,7 @@ namespace ExtensionMethods
         {
             Step_pulse Effect = new Step_pulse(Time.time, dir, magnitude);
             movetransform.GetAdditionalData().WaitList.Add(Effect);
+            movetransform.GetAdditionalData().Waitingforeffect = true;
         }
     }
 }
