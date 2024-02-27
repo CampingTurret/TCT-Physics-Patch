@@ -1,219 +1,114 @@
 ﻿using System;
 using BepInEx;
-using UnboundLib;
-using UnboundLib.Cards;
 using HarmonyLib;
-using CardChoiceSpawnUniqueCardPatch.CustomCategories;
 using HarmonyLib.Tools;
 using UnityEngine;
-using static UnityEngine.Experimental.Rendering.RenderPass;
 using System.Runtime.CompilerServices;
-using Photon.Compression;
-using ExtensionMethods;
 using System.Collections.Generic;
 using TurretsPhysicsPatch;
-
+using Unity.Collections;
+using System.Text;
+using System.Reflection;
+using System.ComponentModel;
 
 namespace TurretsPhysicsPatch
 {
-    // These are the mods required for our mod to work
-    [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInDependency("pykess.rounds.plugins.moddingutils", BepInDependency.DependencyFlags.HardDependency)]
     // Declares our mod to Bepin
     [BepInPlugin(ModId, ModName, Version)]
     // The game our mod is associated with
     [BepInProcess("Rounds.exe")]
     public class TurretsPhysicsPatch : BaseUnityPlugin
-    { 
+    {
         private const string ModId = "TheCampingTurret.Rounds.TCTPP.patch";
         private const string ModName = "TurretsPhysicsPatch";
-        public const string Version = "0.0.6";
- 
+        public const string Version = "0.2.0";
+
         void Awake()
         {
             // Use this to call any harmony patch files your mod may have
             
-            new Harmony(ModId).PatchAll();
-             
+            new Harmony(ModId).PatchAll(Assembly.GetExecutingAssembly());
 
         }
 
-    }
-    /// <summary>
-    /// Both function and positionfunction have to be implimented if custom function is defined and used. <br></br><br></br>
-    /// 
-    /// position function is for dS. <br></br>
-    /// function is for dV. <br></br> <br></br>
-    /// 
-    /// position function is called first
-    /// </summary>
-    public class Bullet_Motion_Physiscs_Effect
-    {
-        public Bullet_Motion_Physiscs_Effect(float t, Vector3 dir,float mag)
-        {
-            triggertime = t;
-            direction = dir;
-            magnitude = mag;
-        }
-
-        public virtual (Vector3, bool) function(float dt) { return (new Vector3(0, 0, 0), false); }
-        public virtual Vector3 positonfunction(float dt) { return new Vector3(0, 0, 0); }
-
-        public float triggertime;
-        public Vector3 direction;
-        public float magnitude;
-    }
-
-    public class Dirac : Bullet_Motion_Physiscs_Effect
-    {
-
-        public Dirac(float t, Vector3 dir, float mag) : base(t,dir,mag)
-        {
-
-        }
-        public override (Vector3,bool) function(float dt)
-        {
-            return (direction * magnitude ,false);
-        }
-        public override Vector3 positonfunction(float dt)
-        {
-            return new Vector3(0, 0, 0);
-        }
-    }
-    public class Square_pulse : Bullet_Motion_Physiscs_Effect
-    {
-
-        public Square_pulse(float t, Vector3 dir, float mag, float dur) : base(t, dir, mag)
-        {
-            duration = dur;
-        }
-        public override (Vector3, bool) function(float dt)
-        {
-            float width;
-            if(duration > dt) { width = dt; }
-            else { width = duration; }
-            Vector3 dV = direction * magnitude*width;
-            duration -= dt;
-            if(duration < 0) { conti = false; }
-
-            return (dV, conti);
-        }
-        public override Vector3 positonfunction(float dt)
-        {
-            float width;
-            if (duration > dt) { width = dt; }
-            else { width = duration; }
-            Vector3 dS = direction * magnitude * width * width *0.5f;
-            return dS;
-        }
-        float duration;
-        bool conti = true;
-    }
-    public class Step_pulse : Bullet_Motion_Physiscs_Effect
-    {
-
-        public Step_pulse(float t, Vector3 dir, float mag) : base(t, dir, mag)
-        {
-        }
-        public override (Vector3, bool) function(float dt)
-        {
-            Vector3 dV = direction * magnitude * dt;
-
-            return (dV, true);
-        }
-        public override Vector3 positonfunction(float dt)
-        {
-            Vector3 dS = direction * magnitude * dt * dt * 0.5f;
-            return dS;
-        }
     }
 
     [HarmonyPatch(typeof(MoveTransform), "Update")]
     public class Patch_MoveTransform
     {
-
-
         [HarmonyPatch(typeof(MoveTransform), "Update")]
         private static bool Prefix(MoveTransform __instance)
         {
             float simspeed = (float)Traverse.Create(__instance).Field("simulationSpeed").GetValue();
-            float t = Time.deltaTime + __instance.GetAdditionalData().msleft;
-            float tsys = Time.time;
-            float dtt = 1f / 90f;
-            float dt = dtt * simspeed;
-            Vector3 Effectstep = new Vector3(0,0,0);
-            Vector3 av;
-            Vector3 nv;
-            Vector3 ag;
-            Vector3 a;
-            Vector3 steppos;
-            
-            //Gravity
-            if (__instance.simulateGravity == 0) { ag = Vector3.down * __instance.gravity * __instance.multiplier; } else { ag = new Vector3(0, 0, 0); }
-
-
-            while (t > dtt) {
-                
-                t = t - dtt;
-                tsys = tsys + dtt;
-                nv = __instance.velocity;
-
-                //Inputs
-                if (__instance.GetAdditionalData().Waitingforeffect)
+            float t = Time.deltaTime * simspeed + __instance.GetAdditionalData().msleft;
+            float dtt = 1f / 70f;
+            if (t > dtt)
+            {
+                float dt = dtt * simspeed;
+                float time_since_started = __instance.GetAdditionalData().time_since_started;
+                Vector2 V0 = __instance.velocity;
+                Vector2 P0 = __instance.transform.position;
+                int grav_sim = __instance.simulateGravity;
+                float grav = __instance.gravity;
+                float mult = __instance.multiplier;
+                float cd = __instance.drag * 0.0075f;
+                float ag;
+                if (grav_sim == 0) { ag = -grav * mult; } else { ag = 0; }
+                if (cd < 0.000001f && !__instance.GetAdditionalData().accelerationeffect)
                 {
-                    List<Bullet_Motion_Physiscs_Effect> L = __instance.GetAdditionalData().WaitList;
-                    foreach (var Effect in L) 
-                    {
-                        if (Effect.triggertime < tsys)
-                        {
-                            Effectstep += Effect.positonfunction(dtt);
-                            (Vector3 Vinc, bool cont ) = Effect.function(dtt);                           
-                            nv += Vinc;
-                            if (!cont)
-                            {
-                                L.Remove(Effect);
-                                if(L.Count == 0)
-                                {
-                                    __instance.GetAdditionalData().Waitingforeffect = false;
-                                }
-                            }
-                        }
-                    }
-                    if (L.Count == 0)
+                    while (t > dtt)
                     {
 
+                        Vector2 newx = TurretsPhysicsExtensions.rangekutta4(new Vector2(P0.x, V0.x), time_since_started, dtt, 0);
+                        Vector2 newy = TurretsPhysicsExtensions.rangekutta4(new Vector2(P0.y, V0.y), time_since_started, dtt, ag);
+                        Vector2 newpos = new Vector2(newx.x, newy.x);
+                        __instance.distanceTravelled += Vector2.Distance(P0, newpos);
+                        __instance.transform.position = newpos;
+                        __instance.velocity = new Vector3(newx.y, newy.y);
+                        __instance.transform.rotation = Quaternion.LookRotation(__instance.velocity, Vector3.forward);
+                        P0 = __instance.transform.position;
+                        V0 = __instance.velocity;
+                        t = t - dtt;
+                        time_since_started += dtt;
                     }
                 }
-
-                //Drag
-                if (__instance.drag < 0.01)
-                {
-                    av = new Vector3(0, 0, 0);   
-                }                
                 else
                 {
-                    av = -__instance.velocity.normalized * __instance.velocity.sqrMagnitude * __instance.multiplier * __instance.drag * 0.015f;
+                    Func<float, float, float> drag = (t, v) => -cd * Math.Abs(v) * v;
+
+                    Func<float, float, float> Ydir;
+                    Func<float, float, float> Xdir;
+
+                    if (__instance.GetAdditionalData().accelerationeffect)
+                    {
+                        Ydir = (t, v) => { float x = drag(t, v) + ag; foreach (Func<float, float, float> eq in __instance.GetAdditionalData().a_y) { x += eq(t, v); } return x; };
+                        Xdir = (t, v) => { float x = drag(t, v); foreach (Func<float, float, float> eq in __instance.GetAdditionalData().a_x) { x += eq(t, v); } return x; };
+                    }
+
+                    else
+                    {
+                        Ydir = (t, v) => drag(t, v) + ag;
+                        Xdir = (t, v) => drag(t, v);
+                    }
+
+
+
+                    while (t > dtt)
+                    {
+                        Vector2 newx = TurretsPhysicsExtensions.rangekutta4(new Vector2(P0.x, V0.x), time_since_started, dtt, Xdir);
+                        Vector2 newy = TurretsPhysicsExtensions.rangekutta4(new Vector2(P0.y, V0.y), time_since_started, dtt, Ydir);
+                        Vector2 newpos = new Vector2(newx.x, newy.x);
+                        __instance.distanceTravelled += Vector2.Distance(P0, newpos);
+                        __instance.transform.position = newpos;
+                        __instance.velocity = new Vector3(newx.y, newy.y);
+                        __instance.transform.rotation = Quaternion.LookRotation(__instance.velocity, Vector3.forward);
+                        P0 = __instance.transform.position;
+                        V0 = __instance.velocity;
+                        t = t - dtt;
+                        time_since_started += dtt;
+                    }
                 }
-
-
-                //Mitigation for to high velocity going backwards
-                if((av*dt).sqrMagnitude > __instance.velocity.sqrMagnitude )
-                {
-                    av = -0.7f * __instance.velocity;
-                }
-
-                //Integration
-                a = ag + av;
-                steppos = a * dt * dt * 0.5f + __instance.velocity * dt;
-                nv += a * dt;
-
-                
-                //Numerical scheme
-                __instance.distanceTravelled += steppos.magnitude + Effectstep.magnitude;
-                __instance.transform.position = __instance.transform.position + steppos + Effectstep;
-                __instance.velocity = nv;
-                __instance.transform.rotation = Quaternion.LookRotation(__instance.velocity, Vector3.forward);
-
+                __instance.GetAdditionalData().time_since_started = time_since_started;
             }
             __instance.GetAdditionalData().msleft = t;
             return false;
@@ -226,16 +121,18 @@ namespace TurretsPhysicsPatch
     public class MoveTransformAdditionalData
     {
         public float msleft;
-        public bool Waitingforeffect;
-        public List<Bullet_Motion_Physiscs_Effect> WaitList;
+        public float time_since_started;
+        public bool accelerationeffect;
+        public List<Func<float,float,float>> a_x;
+        public List<Func<float, float, float>> a_y;
 
         public MoveTransformAdditionalData()
         {
-            float msleft = 0;
-            bool Waitingforeffect = false;
-            List <Bullet_Motion_Physiscs_Effect> WaitList = new List<Bullet_Motion_Physiscs_Effect>();
-            
- 
+            msleft = 0;
+            accelerationeffect = false;
+            time_since_started = 0;
+            a_x = new List<Func<float, float, float>>() {};
+            a_y = new List<Func<float, float, float>>() {};
         }
     }
 
@@ -259,69 +156,81 @@ namespace TurretsPhysicsPatch
         }
     }
     
-}
-
-namespace ExtensionMethods
-{
-    public static class MyExtensionMethods
+    public static class TurretsPhysicsExtensions
     {
+
+        public static Vector2 rangekutta4(Vector2 dir, float t, float dtt, Func<float, float, float> func)
+        {
+            float v = dir.y;
+            Vector2 f1 = new Vector2(v, func(t, v));
+            Vector2 f2 = new Vector2(v + dtt / 2 * f1.y, func(t + dtt / 2, v + dtt / 2 * f1.y));
+            Vector2 f3 = new Vector2(v + dtt / 2 * f2.y, func(t + dtt / 2, v + dtt / 2 * f2.y));
+            Vector2 f4 = new Vector2(v + dtt * f3.y, func(t + dtt, v + dtt * f3.y));
+            Vector2 next = dir + dtt / 6 * (f1 + 2 * f2 + 2 * f3 + f4);
+            return next;
+        }
+        public static Vector2 rangekutta4(Vector2 dir, float t, float dtt, float func)
+        {
+            return new Vector2(dir.x + dtt*dir.y + dtt * dtt * func / 2, dir.y + dtt * func);
+        }
+
+
         /// <summary>
-        /// Adds a dirac pulse to the velocity, This is not syncronised between players
+        /// Adds a constant acceleration to the bullet, applied on the starttime since the bullet spawned.
         /// </summary>
-        /// <param name="Impulse"></param>
-        public static void Impulse_Dirac_Pulse(this MoveTransform movetransform, Vector3 Impulse)
+        /// <param name="accelerations"></param>
+        /// <param name="starttime"></param>
+        public static void add_constant_acceleration(this MoveTransform movetransform, Vector3 accelerations, float starttime)
             
         {
-
-            Dirac Effect = new Dirac(Time.time,Impulse.normalized,Impulse.magnitude);
-            movetransform.GetAdditionalData().WaitList.Add(Effect);
-            movetransform.GetAdditionalData().Waitingforeffect = true;
-        }
-
-        /// <summary>
-        /// Adds a dirac pulse to the velocity, This is delayed to the time set (semi sync-able) <br></br><br></br>
-        ///
-        /// Just to be clear, time is compaired with Time.time. It is not a countdown to 0.
-        /// </summary>
-        /// <param name="Impulse"></param>
-        /// <param name="time"></param>
-        public static void Impulse_Dirac_Pulse(this MoveTransform movetransform, Vector3 Impulse,float time)
-        {
-
-            Dirac Effect = new Dirac(Time.time, Impulse.normalized, Impulse.magnitude);
-            movetransform.GetAdditionalData().WaitList.Add(Effect);
-            movetransform.GetAdditionalData().Waitingforeffect = true;
-
+            //UnityEngine.Debug.Log(movetransform.GetAdditionalData().a_x.ToString());
+            movetransform.GetAdditionalData().a_x.Add((t, v) => { if (t > starttime) { return accelerations.x; } else return 0; });
+            movetransform.GetAdditionalData().a_y.Add((t, v) => { if (t > starttime) { return accelerations.y; } else return 0; });
+            movetransform.GetAdditionalData().accelerationeffect = true;
+            
         }
         /// <summary>
-        /// Adds a square step pulse to the velocity, This is delayed to the time set (semi sync-able), does not account for acceleration during timestep <br></br><br></br>
-        ///
-        /// Just to be clear, time is compaired with Time.time. It is not a countdown to 0.
+        /// Adds an equation for acceleration to the bullet, applied on the starttime since the bullet spawned.
+        /// The equation must be in the same form as the drag.
+        /// 
+        /// Drag:  Func<float, float, float> drag = (t, v) => -cd * Math.Abs(v) * v / 2;
         /// </summary>
-        /// <param name="time"></param>
-        /// <param name="dir"></param>
-        /// <param name="magnitude"></param>
-        /// <param name="duration"></param>
-        public static void Impulse_Square_Pulse(this MoveTransform movetransform,float time, Vector3 dir, float magnitude, float duration)
-        {
-            Square_pulse Effect = new Square_pulse(Time.time, dir, magnitude, duration);
-            movetransform.GetAdditionalData().WaitList.Add(Effect);
-            movetransform.GetAdditionalData().Waitingforeffect = true;
+        /// <param name="List_of_equations"></param>
+        /// <param name="starttime"></param>
+        public static void add_variate_acceleration(this MoveTransform movetransform, List<Func<float,float,float>> List_of_equations, float starttime)
 
+        {
+            movetransform.GetAdditionalData().a_x.Add((t, v) => { if (t > starttime) { return List_of_equations[0](t, v); } else return 0; });
+            movetransform.GetAdditionalData().a_y.Add((t, v) => { if (t > starttime) { return List_of_equations[1](t, v); } else return 0; });
+            movetransform.GetAdditionalData().accelerationeffect = true;
         }
         /// <summary>
-        /// Adds a step pulse to the velocity, This is delayed to the time set (semi sync-able), does not account for acceleration during timestep <br></br><br></br>
-        ///
-        /// Just to be clear, time is compaired with Time.time. It is not a countdown to 0.
+        /// Adds an equation for acceleration to the bullet, applied on the starttime since the bullet spawned.
+        /// The equation must be in the same form as the drag.
+        /// 
+        /// Drag:  Func<float, float, float> drag = (t, v) => -cd * Math.Abs(v) * v / 2;
+        /// 
+        /// direction: 'x' for x, 'y' for y
         /// </summary>
-        /// <param name="time"></param>
-        /// <param name="dir"></param>
-        /// <param name="magnitude"></param>
-        public static void Impulse_Step_Pulse(this MoveTransform movetransform, float time, Vector3 dir, float magnitude)
+        /// <param name="equation"></param>
+        /// <param name="direction"></param>
+        /// <param name="starttime"></param>
+        public static void add_variate_acceleration(this MoveTransform movetransform, Func<float, float, float> equation, char direction, float starttime)
         {
-            Step_pulse Effect = new Step_pulse(Time.time, dir, magnitude);
-            movetransform.GetAdditionalData().WaitList.Add(Effect);
-            movetransform.GetAdditionalData().Waitingforeffect = true;
+            if (direction == 'x')
+            {
+                movetransform.GetAdditionalData().a_x.Add((t, v) => { if (t > starttime) { return equation(t, v); } else return 0; });
+                movetransform.GetAdditionalData().accelerationeffect = true;
+            }
+            else if (direction == 'y')
+            {
+                movetransform.GetAdditionalData().a_y.Add((t, v) => { if (t > starttime) { return equation(t, v); } else return 0; });
+                movetransform.GetAdditionalData().accelerationeffect = true;
+            }
+            else
+            {
+                throw new Exception("Incorrect direction set");
+            }
         }
     }
 }

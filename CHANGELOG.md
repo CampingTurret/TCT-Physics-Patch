@@ -1,6 +1,29 @@
 # Turret's Physics Patch
 
+
+
+## V 0.2.0
+
+Added acceleration support
+    - function for altering acceleration equation
+    - Nowe works with functions instead of classes
+
+changed the update rate
+    - 90 hz to 70 hz
+
+changed the drag coefficient conversion
+    - factor from 0.015 to 0.0075
+
+changed the integration scheme
+    - from forward euler to Runge Kutta 4 
+
+removed fix for high bullet velocities with drag
+    - Reason: new itergration scheme has a higher speed tolerance.
+
+
 ## V 0.1.0
+
+(not published)
 
 Added acceleration support
     - Dirac pulse (2 overloads)
