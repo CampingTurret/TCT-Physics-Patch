@@ -13,10 +13,13 @@ I will look at the bug reports channel from time to time.
 
 ## Changes
 
-EOM: a*t^2 + v0*t + s0 --> a = F , v = da/dt, x = dv/dt 
-Drag: a = D  --> a = D*V^2 * 3/ 400
-Update rate: per frame --> 70 hz
-Adds some functions that impact the acceleration
+EOM: a*t^2 + v0*t + s0 --> a = F , v = da/dt, x = dv/dt.
+
+Drag: a = D  --> a = D*V^2 * 3/ 400.
+
+Update rate: per frame --> 70 hz.
+
+Adds some functions that impact the acceleration.
 
 ## Added functions (These are added to MoveTransform)
 
