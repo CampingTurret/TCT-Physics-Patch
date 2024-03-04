@@ -6,7 +6,7 @@
 
 Added acceleration support
     - function for altering acceleration equation
-    - Nowe works with functions instead of classes
+    - Now works with functions instead of classes
 
 changed the update rate
     - 90 hz to 70 hz
@@ -19,6 +19,11 @@ changed the integration scheme
 
 removed fix for high bullet velocities with drag
     - Reason: new itergration scheme has a higher speed tolerance.
+
+removed unnessesary dependancies
+    - UnboundLib
+    - MMHook
+    - ModdingUtils
 
 
 ## V 0.1.0

@@ -11,6 +11,9 @@ This is a result of the numerical integration used, RK4 does somewhat aleviate t
 If you notice any issues, please post in the rounds modding discord.
 I will look at the bug reports channel from time to time.
 
+Small note:
+I haven't been able to test the added functions since the update, they worked before and the patch seems to work now. 
+
 ## Changes
 
 EOM: a*t^2 + v0*t + s0 --> a = F , v = da/dt, x = dv/dt.

@@ -59,8 +59,8 @@ namespace TurretsPhysicsPatch
                     while (t > dtt)
                     {
 
-                        Vector2 newx = TurretsPhysicsExtensions.rangekutta4(new Vector2(P0.x, V0.x), time_since_started, dtt, 0);
-                        Vector2 newy = TurretsPhysicsExtensions.rangekutta4(new Vector2(P0.y, V0.y), time_since_started, dtt, ag);
+                        Vector2 newx = TurretsPhysicsExtensions.rungekutta4(new Vector2(P0.x, V0.x), time_since_started, dtt, 0);
+                        Vector2 newy = TurretsPhysicsExtensions.rungekutta4(new Vector2(P0.y, V0.y), time_since_started, dtt, ag);
                         Vector2 newpos = new Vector2(newx.x, newy.x);
                         __instance.distanceTravelled += Vector2.Distance(P0, newpos);
                         __instance.transform.position = newpos;
@@ -95,8 +95,8 @@ namespace TurretsPhysicsPatch
 
                     while (t > dtt)
                     {
-                        Vector2 newx = TurretsPhysicsExtensions.rangekutta4(new Vector2(P0.x, V0.x), time_since_started, dtt, Xdir);
-                        Vector2 newy = TurretsPhysicsExtensions.rangekutta4(new Vector2(P0.y, V0.y), time_since_started, dtt, Ydir);
+                        Vector2 newx = TurretsPhysicsExtensions.rungekutta4(new Vector2(P0.x, V0.x), time_since_started, dtt, Xdir);
+                        Vector2 newy = TurretsPhysicsExtensions.rungekutta4(new Vector2(P0.y, V0.y), time_since_started, dtt, Ydir);
                         Vector2 newpos = new Vector2(newx.x, newy.x);
                         __instance.distanceTravelled += Vector2.Distance(P0, newpos);
                         __instance.transform.position = newpos;
@@ -159,7 +159,7 @@ namespace TurretsPhysicsPatch
     public static class TurretsPhysicsExtensions
     {
 
-        public static Vector2 rangekutta4(Vector2 dir, float t, float dtt, Func<float, float, float> func)
+        public static Vector2 rungekutta4(Vector2 dir, float t, float dtt, Func<float, float, float> func)
         {
             float v = dir.y;
             Vector2 f1 = new Vector2(v, func(t, v));
@@ -169,7 +169,7 @@ namespace TurretsPhysicsPatch
             Vector2 next = dir + dtt / 6 * (f1 + 2 * f2 + 2 * f3 + f4);
             return next;
         }
-        public static Vector2 rangekutta4(Vector2 dir, float t, float dtt, float func)
+        public static Vector2 rungekutta4(Vector2 dir, float t, float dtt, float func)
         {
             return new Vector2(dir.x + dtt*dir.y + dtt * dtt * func / 2, dir.y + dtt * func);
         }
