@@ -2,7 +2,7 @@
   "name": "TurretsPhysicsPatch",
   "version_number": "0.2.0",
   "website_url": "https://github.com/CampingTurret/TCT-Physics-Patch",
-  "description": "Changes the bullet physics related to motion. More specificaly changes drag to be quadratic and forces a fixed update rate to make bullet motion independent of framerate. Works post update",
+  "description": "Changes the bullet physics related to motion. More specificaly changes drag to be quadratic and forces a fixed update rate to make bullet motion independent of framerate. Works post update, but is build for pre update.",
   "dependencies": [
     "BepInEx-BepInExPack_ROUNDS-5.4.1900"
   ]

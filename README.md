@@ -14,6 +14,7 @@ I will look at the bug reports channel from time to time.
 Small note:
 I haven't been able to test the added functions since the update, they worked before and the patch seems to work now. 
 
+
 ## Changes
 
 EOM: a*t^2 + v0*t + s0 --> a = F , v = da/dt, x = dv/dt.
@@ -41,3 +42,8 @@ Adds some functions that impact the acceleration.
     - Requires a Vector3 but only x an y are used
     - the acceleration is added at t (time since shot for the bullet), the input value should be in the future for all players as to keep the trajectory the same for each player.
 
+# rungekutta4 (2 overloads)
+    - Performs RK4 integration scheme
+    - dir vector consists of position (x) then velocity (y)
+    - t is used as input to func
+    - dtt is used as input to RK4
